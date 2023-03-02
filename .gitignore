@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.DS_Store
+
+# 敏感数据
+/data
+config.py
+refresh_tokens.json
 
 # C extensions
 *.so
