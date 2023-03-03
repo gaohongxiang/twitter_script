@@ -724,10 +724,12 @@ if __name__ == '__main__':
     # 1,1代表第1个账号。2,2代表第二个账号。以此类推...
     # 1,20代表第1-20个账号。3,10代表第3-10个账号。以此类推...
     # 默认用比特浏览器。如果用ads浏览器需要把s_bitbrowser值改为False
-    data = my_format_data(start_num=1, end_num=20, is_bitbrowser=False)
+    data = my_format_data(start_num=1, end_num=20, is_bitbrowser=True)
+    # print(data)
+    
     # 所有twitter账号
     my_twitter_data = my_twitter_data()
-
+    # print(my_twitter_data)
 
 
     # # 2、程序第一次需要跟用户交互，来获取权限。会自动打开指纹浏览器（指纹app需要先打开），点击授权，只需要交互1次。自动将refresh_token保存备用。
