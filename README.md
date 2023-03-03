@@ -76,9 +76,9 @@ client_secret = "xxxxxxxxxx"
 redirect_uri = "https://twitter.com/home"
 
 # AdsPower Local API 接口
-adspower_url = 'http://local.adspower.com:50325'
+adspower_url = 'http://local.adspower.com:xxxxx'
 # BitBrowser Local API 接口
-bitbrowser_url = 'http://127.0.0.1:54345'
+bitbrowser_url = 'http://127.0.0.1:xxxxx'
 
 refresh_tokens_file = './twitter_/refresh_tokens.json'
 twitter_file = './data/twitter.csv'
