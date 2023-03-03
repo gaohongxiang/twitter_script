@@ -154,21 +154,21 @@ class BitBrowserUtil():
 
 if __name__ == '__main__':
 
-    # 创建浏览器
-    for i in range(1):
-        create_or_update_browser(browser_os='mac', browser_id='')
-    exit()
+    # # 创建浏览器
+    # for i in range(1):
+    #     create_or_update_browser(browser_os='mac', browser_id='')
+    # exit()
 
     data = my_format_data(start_num=1, end_num=3, is_bitbrowser=True)
-    print(data)
+    # print(data)
 
 
 
-    # 修改代理ip（socks5）
-    for d in data:
-        # 参数：browser_id, index_id, proxy_ip, proxy_port, proxy_username, proxy_password)
-        update_proxy(browser_id=d['browser_id'], index_id=d['index_id'], proxy_ip=d['proxy_ip'], proxy_port=d['proxy_port'], proxy_username=d['proxy_username'], proxy_password=d['proxy_password'])
-    exit()
+    # # 修改代理ip（socks5）
+    # for d in data:
+    #     # 参数：browser_id, index_id, proxy_ip, proxy_port, proxy_username, proxy_password)
+    #     update_proxy(browser_id=d['browser_id'], index_id=d['index_id'], proxy_ip=d['proxy_ip'], proxy_port=d['proxy_port'], proxy_username=d['proxy_username'], proxy_password=d['proxy_password'])
+    # exit()
 
 
 

@@ -163,13 +163,13 @@ if __name__ == '__main__':
 
 
     data = my_format_data(start_num=1, end_num=3, is_bitbrowser=False)
+    # print(data)
 
-
-    # 修改代理ip（socks5）
-    for d in data:
-        # 参数：browser_id, proxy_ip, proxy_port, proxy_username, proxy_password
-        update_proxy(browser_id=d['browser_id'], index_id=d['index_id'], proxy_ip=d['proxy_ip'], proxy_port=d['proxy_port'], proxy_username=d['proxy_username'], proxy_password=d['proxy_password'])
-    exit()
+    # # 修改代理ip（socks5）
+    # for d in data:
+    #     # 参数：browser_id, proxy_ip, proxy_port, proxy_username, proxy_password
+    #     update_proxy(browser_id=d['browser_id'], index_id=d['index_id'], proxy_ip=d['proxy_ip'], proxy_port=d['proxy_port'], proxy_username=d['proxy_username'], proxy_password=d['proxy_password'])
+    # exit()
 
 
 
