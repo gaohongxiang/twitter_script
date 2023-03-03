@@ -156,7 +156,7 @@ if __name__ == '__main__':
         if int(start_num) <= 0 or int(end_num) <= 0:
             print('账号必须大于0')
             return
-        if int(start_num) < int(end_num):
+        if int(start_num) > int(end_num):
             print('开始账号必须小于或等于结束账号')
             return
         all_ads_id = pd.read_excel('./data/bitbrowser.xlsx')

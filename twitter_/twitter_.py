@@ -542,7 +542,7 @@ class TwitterUtil():
             tweets = self.search_recent_tweets(query=query, start_time=start_time, end_time=end_time, search_amount=search_amount, follows_count=follows_count, like_count=like_count)
             # 随机选择一条推文
             tweet = random.choice(tweets)
-            print(tweet)
+            # print(tweet)
             # 关注推文作者
             self.follow(tweet['tweet_author_id'])
             time.sleep(1)
@@ -559,7 +559,7 @@ class TwitterUtil():
                 time.sleep(1)
             if is_retweet == True:
                 # 转推
-                self.retweet(tweet['twitter_id'])
+                self.retweet(tweet['tweet_id'])
                 time.sleep(1)
             if is_reply == True:
                 # 评论并@tag_amount个朋友
@@ -724,17 +724,17 @@ if __name__ == '__main__':
         if int(start_num) <= 0 or int(end_num) <= 0:
             print('账号必须大于0')
             return
-        if int(start_num) < int(end_num):
+        if int(start_num) > int(end_num):
             print('开始账号必须小于或等于结束账号')
             return
-        all_browser_id = pd.read_excel('./data/bitbrowser.xlsx')
+        all_browser_id = pd.read_excel('./data/adspower.xlsx')
         all_browser_id = all_browser_id.sort_values('id')
         # adspower是倒序导出的，具体你需要看下自己的数据
         # reset_index(dorp=True)放弃原来序号，按正序输出
         all_browser_id = all_browser_id.reset_index(drop=True)
         all_browser_id = all_browser_id[['acc_id', 'id', 'ua']]
         all_ip = pd.read_csv('./data/ip.csv', sep=':')
-        all_ip['proxy'] = "socks5://" + all_ip['account'] +":" + all_ip['password'] +"@" + all_ip['ip'] +":" + all_ip['post'].map(str)
+        all_ip['proxy'] = "socks5://" + all_ip['account'] +":" + all_ip['password'] +"@" + all_ip['ip'] +":" + all_ip['port'].map(str)
         all_proxy = all_ip['proxy']
         all_twitter = pd.read_csv('./data/twitter.csv', sep='|', engine='python')
         # 将DataFrame数据转换为数组
@@ -748,7 +748,7 @@ if __name__ == '__main__':
     # 两个参数，开始账号、结束账号。
     # 1,1代表第1个账号。2,2代表第二个账号。以此类推...
     # 1,20代表第1-20个账号。3,10代表第3-10个账号。以此类推...
-    data, my_twitter_data = my_data(17,17)
+    data, my_twitter_data = my_data(2,20)
 
 
 
@@ -756,7 +756,7 @@ if __name__ == '__main__':
     # # 将获取到的refresh_token保存在`twitter_credential_tokens.json`文件中。以后运行程序就不需要再跟用户交互了。程序自动使用refresh_token刷新accress_token来调用twitter api，并将自动更新文件中的refresh_token。
     # for d in data:   
     #     # 验证
-    #     oauth2 = OAuth2ForTwitterUtil(d['id'])
+    #     oauth2 = OAuth2ForTwitterUtil(d['id']) 
     #     oauth2.create_refresh_token(d['twitter_username'])
     # exit()
         
@@ -764,6 +764,7 @@ if __name__ == '__main__':
 
     # 3、调用twitter api 处理业务
     for d in data:
+        print(d)
         # 实例化TwitterUtil
         twitter = TwitterUtil(d['twitter_username'], d['ua'], d['proxy'])
 

@@ -93,11 +93,11 @@ def update_proxy(ads_id, proxy_host, proxy_port, proxy_user, proxy_password):
             "proxy_password":proxy_password
         }
     }
-    response = requests.post(url=f"{adspower_url} /api/v1/user/update", json=data).json()
+    response = requests.post(url=f"{adspower_url}/api/v1/user/update", json=data).json()
     if response['code'] != 0:
         print('修改代理失败', response["msg"]) 
         return
-    print(response)
+    print(response['msg'])
     time.sleep(1) # api速率限制。添加等待
 
 class AdsPowerUtil():
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         if int(start_num) <= 0 or int(end_num) <= 0:
             print('账号必须大于0')
             return
-        if int(start_num) < int(end_num):
+        if int(start_num) > int(end_num):
             print('开始账号必须小于或等于结束账号')
             return
         all_ads_id = pd.read_excel('./data/adspower.xlsx')
@@ -175,19 +175,19 @@ if __name__ == '__main__':
         all_ads_id = all_ads_id.reset_index(drop=True)
         all_ads_id = all_ads_id[['acc_id', 'id', 'ua']]
         all_ip = pd.read_csv('./data/ip.csv', sep=':')
-        data = pd.merge(left=all_ads_id,right=all_proxy,left_index=True,right_index=True,how='inner')
+        data = pd.merge(left=all_ads_id,right=all_ip,left_index=True,right_index=True,how='inner')
         data = data.iloc[int(start_num)-1:int(end_num),:].reset_index(drop=True)
         data = data.to_dict('records')
         return data
 
-    data = my_data(1,1)
+    data = my_data(1,20)
 
 
-    # # 修改代理ip（socks5）
-    # for d in data:
-    #     # 参数：ads_id, proxy_host, proxy_port, proxy_user, proxy_password
-    #     update_proxy(ads_id=d['id'], proxy_host=d['ip'], proxy_port=d['port'], proxy_user=d['account'], proxy_password=d['password'])
-    # exit()
+    # 修改代理ip（socks5）
+    for d in data:
+        # 参数：ads_id, proxy_host, proxy_port, proxy_user, proxy_password
+        update_proxy(ads_id=d['id'], proxy_host=d['ip'], proxy_port=d['port'], proxy_user=d['account'], proxy_password=d['password'])
+    exit()
 
 
 
