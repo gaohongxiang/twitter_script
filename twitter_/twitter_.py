@@ -46,6 +46,9 @@ class OAuth2ForTwitterUtil(BitBrowserUtil):
         except Exception as e:
             print(e)
         result = oauth2_user_handler.fetch_token(response_url)
+        if 'error' in result:
+            print(result['error_description'])
+            return
         new_refresh_token = {account: result['refresh_token']}
         with open(refresh_tokens_file, 'r') as f:
             data = json.load(f)
@@ -79,6 +82,9 @@ class TwitterUtil():
         response = requests.post(url=url, headers=headers, data=playlod, proxies=proxies)
         # byte.decode('UTF-8')将byte转换成str，json.load将str转换成dict
         result = json.loads((response.content).decode('UTF-8'))
+        if 'error' in result:
+            print(result['error_description'])
+            return
         new_refresh_token = {account: result['refresh_token']}
         with open(refresh_tokens_file, 'r') as f:
             data = json.load(f)
