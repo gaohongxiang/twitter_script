@@ -110,7 +110,7 @@ xxxxx|xxxxx|...
 
 你的独立ip数据
 ```
-ip:post:account:password
+proxy_ip:proxy_port:proxy_username:proxy_password
 xxxxx:xxxxx:xxxxx:xxxxx
 xxxxx:xxxxx:xxxxx:xxxxx
 ......
