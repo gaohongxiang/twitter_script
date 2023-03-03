@@ -6,7 +6,7 @@ twitter
 - 转推（retweet）
 - 评论（reply）
 - 根据条件随机选择推文，点赞转推评论
-- 随机选择一个互关贴，转推关注（作者及评论者）
+- 随机选择一个互关贴，转推评论关注（作者及评论者）
 - 回关
 
 指纹浏览器
@@ -22,7 +22,7 @@ twitter
 # 说明
 - python、编辑器问题需要自行搜索答案。
 - 本程序在mac下测试，windows需要自行测试
-- 本程序默认使用比特浏览器。如需使用ads浏览器，twitter_py文件需要如下修改
+- 本程序默认使用比特浏览器。如需使用ads浏览器，twitter_.py文件需要如下修改
 ```
 # 导入adspower文件
 from browser.adspower import *
@@ -49,21 +49,22 @@ twitter开发者平台网址：https://developer.twitter.com/en/portal/dashboard
 ```
 twitter_script
     twitter_
-        twitter_.py
-        refresh_tokens.json
+        twitter_.py # 主文件
+        refresh_tokens.json # 各账号refresh_token文件
     browser
-        bitbrowser.py
-        adspower.py
+        bitbrowser.py # 比特浏览器文件
+        adspower.py # ads浏览器文件
     data
-        twitter.csv
-        ip.csv
-        bitbrowser.xlsx
-        adspower.xlsx
-        tweet_texts.txt
-        reply_texts.txt
-    config.py
-    README.md
-    .gitignore
+        twitter.csv # twitter账号文件
+        ip.csv  # 独立ip文件
+        bitbrowser.xlsx # 比特浏览器数据文件
+        adspower.xlsx # ads浏览器数据文件
+        tweet_texts.txt # 推文内容文件
+        reply_texts.txt # 回复话术文件
+    config.py # 配置文件
+    formatdata.py # 数据组装文件
+    README.md # 说明文档
+    .gitignore # git版本控制系统文件，敏感数据不上传到github
 ```
 
 由于数据属于敏感文件，不能上传。需要自行补齐数据文件。xxxxx的地方换成你自己的数据
@@ -74,14 +75,18 @@ client_id = "xxxxxxxxxx"
 client_secret = "xxxxxxxxxx"
 redirect_uri = "https://twitter.com/home"
 
+# AdsPower Local API 接口
+adspower_url = 'http://local.adspower.com:50325'
+# BitBrowser Local API 接口
+bitbrowser_url = 'http://127.0.0.1:54345'
+
 refresh_tokens_file = './twitter_/refresh_tokens.json'
+twitter_file = './data/twitter.csv'
+ip_file = './data/ip.csv'
 tweet_texts_file = './data/tweet_texts.txt'
 reply_texts_file = './data/reply_texts.txt'
-
-# AdsPower Local API 接口
-adspower_url = 'http://local.adspower.com:xxxxx'
-# BitBrowser Local API 接口
-bitbrowser_url = 'http://127.0.0.1:xxxxx'
+bitbrowser_file = './data/bitbrowser.xlsx'
+adspower_file = './data/adspower.xlsx'
 ```
 
 2、refresh_tokens.json
@@ -129,10 +134,20 @@ great
 ......
 ```
 
-7、bitbroswer.xlsx
+7、bitbroswer.xlsx / adspower.xlsx
 
-比特浏览器数据文件。需要创建完浏览器后导出数据文件，并重命名。
+比特浏览器 / ads浏览器数据文件。需要创建完浏览器后导出数据文件，并重命名。
 
+# 组装数据
+
+`formatdata.py`文件用来组装数据。将散落在各文件的数据，指纹浏览器的数据、twitter账号的数据、ip数据等组装起来备用。
+
+格式是`[{formatadata1},{formatadata2},...]`。每条数据如下所示
+```
+{'index_id': 1, 'browser_id': xxxxx, 'user_agent': xxxxx, 'proxy_ip': xxxxx, 'proxy_port': xxxxx, 'proxy_username': xxxxx, 'proxy_password': xxxxx, 'proxy': 'socks5://account:password@ip:port', 'twitter_username': xxxxx, 'twitter_password': xxxxx}
+```
+
+这里一定要做好数据的对应。一个浏览器对应一个ip一个twitter，一一对应好后就不要变了。如果出现twitter被封或者ip不干净的情况，及时更换相关文件的对应数据。
 
 # 示例
 
