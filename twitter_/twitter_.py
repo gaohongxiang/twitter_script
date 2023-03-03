@@ -4,9 +4,10 @@ import json, requests, random, datetime, time, pytz
 import sys, os
 from dateutil.parser import parse as date_parse
 sys.path.append(os.getcwd()) # 工作目录
-# from browser.adspower import *
 from browser.bitbrowser import *
+# from browser.adspower import *
 from config import *
+from formatdata import *
 
 class OAuth2ForTwitterUtil(BitBrowserUtil):
     """身份验证,获取refresh_token备用
@@ -720,45 +721,22 @@ class TwitterUtil():
 if __name__ == '__main__':
 
     # 1、组装数据
-    def my_data(start_num, end_num):
-        if int(start_num) <= 0 or int(end_num) <= 0:
-            print('账号必须大于0')
-            return
-        if int(start_num) > int(end_num):
-            print('开始账号必须小于或等于结束账号')
-            return
-        all_browser_id = pd.read_excel('./data/adspower.xlsx')
-        all_browser_id = all_browser_id.sort_values('id')
-        # adspower是倒序导出的，具体你需要看下自己的数据
-        # reset_index(dorp=True)放弃原来序号，按正序输出
-        all_browser_id = all_browser_id.reset_index(drop=True)
-        all_browser_id = all_browser_id[['acc_id', 'id', 'ua']]
-        all_ip = pd.read_csv('./data/ip.csv', sep=':')
-        all_ip['proxy'] = "socks5://" + all_ip['account'] +":" + all_ip['password'] +"@" + all_ip['ip'] +":" + all_ip['port'].map(str)
-        all_proxy = all_ip['proxy']
-        all_twitter = pd.read_csv('./data/twitter.csv', sep='|', engine='python')
-        # 将DataFrame数据转换为数组
-        my_twitter_data = all_twitter['twitter_username'].values
-        data = pd.merge(left=all_browser_id,right=all_proxy,left_index=True,right_index=True,how='inner')
-        data = pd.merge(left=data,right=all_twitter,left_index=True,right_index=True,how='inner')
-        data = data.iloc[int(start_num)-1:int(end_num),:].reset_index(drop=True)
-        data = data.to_dict('records')
-        return data, my_twitter_data
-
-    # 两个参数，开始账号、结束账号。
     # 1,1代表第1个账号。2,2代表第二个账号。以此类推...
     # 1,20代表第1-20个账号。3,10代表第3-10个账号。以此类推...
-    data, my_twitter_data = my_data(2,20)
+    # 默认用比特浏览器。如果用ads浏览器需要把s_bitbrowser值改为False
+    data = my_format_data(start_num=1, end_num=1, is_bitbrowser=False)
+    # 所有twitter账号
+    my_twitter_data = my_twitter_data()
 
 
 
-    # # 2、程序第一次需要跟用户交互，来获取权限。会自动打开指纹浏览器（指纹app需要先打开），点击授权，只需要交互1次。自动将refresh_token保存备用。
-    # # 将获取到的refresh_token保存在`twitter_credential_tokens.json`文件中。以后运行程序就不需要再跟用户交互了。程序自动使用refresh_token刷新accress_token来调用twitter api，并将自动更新文件中的refresh_token。
-    # for d in data:   
-    #     # 验证
-    #     oauth2 = OAuth2ForTwitterUtil(d['id']) 
-    #     oauth2.create_refresh_token(d['twitter_username'])
-    # exit()
+    # 2、程序第一次需要跟用户交互，来获取权限。会自动打开指纹浏览器（指纹app需要先打开），点击授权，只需要交互1次。自动将refresh_token保存备用。
+    # 将获取到的refresh_token保存在`twitter_credential_tokens.json`文件中。以后运行程序就不需要再跟用户交互了。程序自动使用refresh_token刷新accress_token来调用twitter api，并将自动更新文件中的refresh_token。
+    for d in data:   
+        # 验证
+        oauth2 = OAuth2ForTwitterUtil(d['browser_id']) 
+        oauth2.create_refresh_token(d['twitter_username'])
+    exit()
         
 
 
@@ -766,7 +744,7 @@ if __name__ == '__main__':
     for d in data:
         print(d)
         # 实例化TwitterUtil
-        twitter = TwitterUtil(d['twitter_username'], d['ua'], d['proxy'])
+        twitter = TwitterUtil(d['twitter_username'], d['user_agent'], d['proxy'])
 
         # # 通过用户名获取用户id
         # user_id = twitter.get_user_id_from_username('gaohongxiang')
@@ -802,24 +780,24 @@ if __name__ == '__main__':
 
         # # 获取自己的关注者，没有关注的回关
         # # 参数：my_twitter_data=None, once_follow_num=10
-        # twitter.follow_back(my_twitter_data=my_twitter_data,once_follow_num=10)
+        twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
 
-        # 日常养号：发布推文|随机获取符合一定条件的推文关注点赞转推评论|随机获取互关贴，留言，回关
-        lucky = random.choice([1, 2, 3])
-        if lucky == 1:
-            twitter.create_tweet()
-        elif lucky == 2:
-            # query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50, tag_amount=3, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True
-            twitter.giveaway(query='(follow OR like OR rt OR tag OR retweet OR 关注 OR 喜欢 OR 转推) (#nft OR #gamefi) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, search_amount=10, follows_count=100, like_count=50, tag_amount=0, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True)
-        elif lucky == 3:
-            # 1、获取自己的关注者，关注。2、随机找到互关贴，发互关消息。
-            # query, start_time, end_time=None, follows_count=1000, like_count=50, search_amount=20, to_follow_amount=10, my_twitter_data=None, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=True
-            twitter.set_follow_info(query='(互关 OR 涨粉 OR 互粉) (#互关 OR #互粉 OR #有关必回) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, follows_count=1000, like_count=10, search_amount=10, to_follow_amount=10, my_twitter_data=my_twitter_data, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=False)
-            # my_twitter_data=None, once_follow_num=10
-            twitter.follow_back(my_twitter_data=my_twitter_data,once_follow_num=10)
-        if len(data) > 1:
-            interval_time = 60
-            time.sleep(random.randrange(interval_time, interval_time+10))
+        # # 日常养号：发布推文|随机获取符合一定条件的推文关注点赞转推评论|随机获取互关贴，留言，回关
+        # lucky = random.choice([1, 2, 3])
+        # if lucky == 1:
+        #     twitter.create_tweet()
+        # elif lucky == 2:
+        #     # query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50, tag_amount=3, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True
+        #     twitter.giveaway(query='(follow OR like OR rt OR tag OR retweet OR 关注 OR 喜欢 OR 转推) (#nft OR #gamefi) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, search_amount=10, follows_count=100, like_count=50, tag_amount=0, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True)
+        # elif lucky == 3:
+        #     # 1、获取自己的关注者，关注。2、随机找到互关贴，发互关消息。
+        #     # query, start_time, end_time=None, follows_count=1000, like_count=50, search_amount=20, to_follow_amount=10, my_twitter_data=None, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=True
+        #     twitter.set_follow_info(query='(互关 OR 涨粉 OR 互粉) (#互关 OR #互粉 OR #有关必回) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, follows_count=1000, like_count=10, search_amount=10, to_follow_amount=10, my_twitter_data=my_twitter_data, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=False)
+        #     # my_twitter_data=None, once_follow_num=10
+        #     twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
+        # if len(data) > 1:
+        #     interval_time = 60
+        #     time.sleep(random.randrange(interval_time, interval_time+10))
         
 
 

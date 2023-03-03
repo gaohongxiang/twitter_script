@@ -15,14 +15,15 @@ import numpy as np
 import requests,os,sys,time,math,json
 sys.path.append(os.getcwd()) # 工作目录
 from config import *
+from formatdata import *
 
-def create_or_update_browser(browser_os='mac', is_create=True, ads_id=''):
+def create_or_update_browser(browser_os='mac', is_create=True, browser_id=''):
     """创建或者修改浏览器信息
         
-        Attributes:
-            browser_os: 基于什么系统生成或修改浏览器。最好跟自己主机一致。 mac | windows
-            is_create: 是否为创建 True创建 | False修改
-            ads_id: 浏览器id。is_create为False时设置。默认空
+    Attributes:
+        browser_os: 基于什么系统生成或修改浏览器。最好跟自己主机一致。 mac | windows
+        is_create: 是否为创建 True创建 | False修改
+        browser_id: 浏览器id。is_create为False时设置。默认空
     """
     # 操作系统
     if browser_os in ['mac','macos']:
@@ -58,11 +59,11 @@ def create_or_update_browser(browser_os='mac', is_create=True, ads_id=''):
         }
     }
     if is_create == False:
-        if ads_id == '':
-            print('请传入ads_id')
+        if browser_id == '':
+            print('请传入browser_id')
             return
         data = json.loads(body)
-        data['user_id'] = ads_id
+        data['user_id'] = browser_id
         body = json.dumps(data)
     url = f"{adspower_url}/api/v1/user/create" if is_create == True else f"{adspower_url}/api/v1/user/update"
     response = requests.post(url=url, json=body).json()
@@ -73,23 +74,24 @@ def create_or_update_browser(browser_os='mac', is_create=True, ads_id=''):
     print(response)
     time.sleep(1) # api速率限制。添加等待
 
-def update_proxy(ads_id, proxy_host, proxy_port, proxy_user, proxy_password):
-    """
-        Attributes:
-            ads_id: 浏览器id
-            proxy_host: 代理主机
-            proxy_port: 代理端口
-            proxy_user: 代理账号
-            proxy_password: 代理密码
+def update_proxy(browser_id, index_id, proxy_ip, proxy_port, proxy_username, proxy_password):
+    """修改浏览器代理
+    Attributes:
+        browser_id: 浏览器id
+        index_id: 序号
+        proxy_ip: 代理主机
+        proxy_port: 代理端口
+        proxy_username: 代理账号
+        proxy_password: 代理密码
     """
     data = {
-        'user_id': ads_id,
+        'user_id': browser_id,
         'user_proxy_config': {
             "proxy_soft":"other",
             "proxy_type":"socks5",
-            "proxy_host":proxy_host,
+            "proxy_host":proxy_ip,
             "proxy_port":proxy_port,
-            "proxy_user":proxy_user,
+            "proxy_user":proxy_username,
             "proxy_password":proxy_password
         }
     }
@@ -97,20 +99,20 @@ def update_proxy(ads_id, proxy_host, proxy_port, proxy_user, proxy_password):
     if response['code'] != 0:
         print('修改代理失败', response["msg"]) 
         return
-    print(response['msg'])
+    print('第',index_id,'个账号修改代理成功')
     time.sleep(1) # api速率限制。添加等待
 
 class AdsPowerUtil():
     """selenium操作adspower指纹浏览器
     """
 
-    def __init__(self, ads_id):
+    def __init__(self, browser_id):
         """启动浏览器(webdriver为adspower自带的,不必单独下载)
 
         Attributes:
-            ads_id:adspower浏览器id
+            browser_id:adspower浏览器id
         """
-        self.ads_id = ads_id
+        self.browser_id = browser_id
         # 打开浏览器
         self.driver = self.open()
         # 全屏
@@ -119,9 +121,9 @@ class AdsPowerUtil():
         self.close_other_windows()
 
     def open(self):
-        response = requests.get(f"{adspower_url}/api/v1/browser/start?user_id={self.ads_id}").json()
+        response = requests.get(f"{adspower_url}/api/v1/browser/start?user_id={self.browser_id}").json()
         if response["code"] != 0:
-            print("please check ads_id", response["msg"])
+            print("please check browser_id", response["msg"])
             return
         # 启动浏览器后在返回值中拿到对应的Webdriver的路径response["data"]["webdriver"]
         chrome_driver = Service(str(response["data"]["webdriver"]))
@@ -147,7 +149,7 @@ class AdsPowerUtil():
     def quit(self):
         """关闭浏览器
         """
-        response = requests.get(f"{adspower_url}/api/v1/browser/stop?user_id={self.ads_id}")
+        response = requests.get(f"{adspower_url}/api/v1/browser/stop?user_id={self.browser_id}")
         if response['code'] != 0:
             print('关闭失败', response['msg'])
 
@@ -155,43 +157,23 @@ if __name__ == '__main__':
 
     # # 创建浏览器
     # for i in range(10):
-    #     # 参数：browser_os='mac', is_create=True, ads_id=''
-    #     create_or_update_browser(browser_os='mac', is_create=True, ads_id='')
+    #     # 参数：browser_os='mac', is_create=True, browser_id=''
+    #     create_or_update_browser(browser_os='mac', is_create=True, browser_id='')
     # exit()
 
 
-    # 组装数据
-    def my_data(start_num, end_num):
-        if int(start_num) <= 0 or int(end_num) <= 0:
-            print('账号必须大于0')
-            return
-        if int(start_num) > int(end_num):
-            print('开始账号必须小于或等于结束账号')
-            return
-        all_ads_id = pd.read_excel('./data/adspower.xlsx')
-        all_ads_id = all_ads_id.sort_values('id')
-        # adspower是倒序导出的，具体你需要看下自己的数据
-        # reset_index(dorp=True)放弃原来序号，按正序输出
-        all_ads_id = all_ads_id.reset_index(drop=True)
-        all_ads_id = all_ads_id[['acc_id', 'id', 'ua']]
-        all_ip = pd.read_csv('./data/ip.csv', sep=':')
-        data = pd.merge(left=all_ads_id,right=all_ip,left_index=True,right_index=True,how='inner')
-        data = data.iloc[int(start_num)-1:int(end_num),:].reset_index(drop=True)
-        data = data.to_dict('records')
-        return data
-
-    data = my_data(1,20)
+    data = my_format_data(start_num=1, end_num=3, is_bitbrowser=False)
 
 
     # 修改代理ip（socks5）
     for d in data:
-        # 参数：ads_id, proxy_host, proxy_port, proxy_user, proxy_password
-        update_proxy(ads_id=d['id'], proxy_host=d['ip'], proxy_port=d['port'], proxy_user=d['account'], proxy_password=d['password'])
+        # 参数：browser_id, proxy_ip, proxy_port, proxy_username, proxy_password
+        update_proxy(browser_id=d['browser_id'], index_id=d['index_id'], proxy_ip=d['proxy_ip'], proxy_port=d['proxy_port'], proxy_username=d['proxy_username'], proxy_password=d['proxy_password'])
     exit()
 
 
 
     # for d in data:
     #     print(d)
-    #     adspower = AdsPowerUtil(d['id'])
+    #     adspower = AdsPowerUtil(d['browser_id'])
 
