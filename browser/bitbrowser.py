@@ -10,13 +10,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-import pandas as pd
-import numpy as np
 import requests,os,sys,time,math,json
 sys.path.append(os.getcwd()) # 工作目录
 from config import *
 from formatdata import *
+from utils import try_except_code
 
+@try_except_code
 def create_or_update_browser(browser_os='mac', browser_id=''):
     """创建或者修改浏览器窗口
 
@@ -62,13 +62,13 @@ def create_or_update_browser(browser_os='mac', browser_id=''):
         }
     }
 
-    response = requests.post(f"{bitbrowser_url}/browser/update", json=body).json()
-    if response['success'] != True:
-        print('创建或修改浏览器失败', response['msg'])
-        return
+    response = requests.post(f"{bitbrowser_url}/browser/updat", json=body)
+    response.raise_for_status()
+    response = response.json()
     browser_id = response['data']['id']
     print('创建或修改浏览器成功,浏览器id为:', browser_id)
 
+@try_except_code
 def update_proxy(browser_id, index_id, proxy_ip, proxy_port, proxy_username, proxy_password):
     """修改浏览器代理
 
@@ -91,16 +91,15 @@ def update_proxy(browser_id, index_id, proxy_ip, proxy_port, proxy_username, pro
         'proxyPassword': proxy_password, # 代理密码
         'isIpv6': False, # 默认false
     }
-    response = requests.post(f"{bitbrowser_url}/browser/proxy/update", json=body).json()
-    if response['success'] != True:
-        print('修改代理失败', response['msg'])
-        return
+    response = requests.post(f"{bitbrowser_url}/browser/proxy/update", json=body)
+    response.raise_for_status()
     print('第',index_id,'个账号修改代理成功')
 
 class BitBrowserUtil():
     """selenium操作adspower指纹浏览器
     """
 
+    @try_except_code
     def __init__(self, browser_id):
         """启动浏览器(webdriver为自带的,不必单独下载)
 
@@ -115,13 +114,12 @@ class BitBrowserUtil():
         # 关闭其他窗口
         self.close_other_windows()
 
+    @try_except_code
     def open(self):
         body = {'id': self.browser_id}
-        response = requests.post(f"{bitbrowser_url}/browser/open", json=body).json()
-        print(response)
-        if response['success'] != True:
-            print('打开浏览器失败')
-            return
+        response = requests.post(f"{bitbrowser_url}/browser/open", json=body)
+        response.raise_for_status()
+        response = response.json()
         # 启动浏览器后在返回值中拿到对应的driver的路径
         chrome_driver = Service(str(response["data"]["driver"]))
         # selenium启动的chrome浏览器是一个空白的浏览器。chromeOptions是一个配置chrome启动属性的类，用来配置参数。
@@ -131,6 +129,7 @@ class BitBrowserUtil():
         driver = webdriver.Chrome(service=chrome_driver, options=chrome_options)
         return driver
         
+    @try_except_code
     def close_other_windows(self):
         """关闭无关窗口，只留当前窗口
         理论上下面代码会保留当前窗口，句柄没错。但是实际窗口却没有达到预期。不清楚具体原因。后续再研究。目前能做到的就是只保留一个窗口
@@ -143,23 +142,24 @@ class BitBrowserUtil():
                 self.driver.close()
         self.driver.switch_to.window(current_handle)
 
+    @try_except_code
     def quit(self):
         """关闭浏览器
         """
         body = {'id': self.browser_id}
         response = requests.post(f"{bitbrowser_url}/browser/close", json=body)
-        if response['success'] != True:
-            print('关闭浏览器失败')
-            return
+        response.raise_for_status()
 
 if __name__ == '__main__':
 
     # # 创建浏览器
-    # for i in range(1):
+    # for i in range(20):
     #     create_or_update_browser(browser_os='mac', browser_id='')
     # exit()
 
-    data = my_format_data(start_num=1, end_num=3, is_bitbrowser=True)
+
+
+    data = my_format_data(start_num=1, end_num=20, is_bitbrowser=True)
     # print(data)
 
 

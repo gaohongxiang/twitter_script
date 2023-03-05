@@ -10,13 +10,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-import pandas as pd
-import numpy as np
 import requests,os,sys,time,math,json
 sys.path.append(os.getcwd()) # 工作目录
 from config import *
 from formatdata import *
+from utils import try_except_code
 
+@try_except_code
 def create_or_update_browser(browser_os='mac', is_create=True, browser_id=''):
     """创建或者修改浏览器信息
         
@@ -66,14 +66,14 @@ def create_or_update_browser(browser_os='mac', is_create=True, browser_id=''):
         data['user_id'] = browser_id
         body = json.dumps(data)
     url = f"{adspower_url}/api/v1/user/create" if is_create == True else f"{adspower_url}/api/v1/user/update"
-    response = requests.post(url=url, json=body).json()
-    if response['code'] != 0:
-        tips = '创建浏览器信息失败:' if is_create == True else '修改浏览器信息失败:'
-        print(tips, response["msg"])
-        return
-    print(response)
+    response = requests.post(url=url, json=body)
+    # 检查响应的状态码，如果状态码表明请求失败，则抛出一个HTTPError异常。用try_except_code捕获错误。如果状态码表明请求成功，则什么也不会发生，函数会直接返回
+    response.raise_for_status()
+    response = response.json()
+    print(response['data'])
     time.sleep(1) # api速率限制。添加等待
 
+@try_except_code
 def update_proxy(browser_id, index_id, proxy_ip, proxy_port, proxy_username, proxy_password):
     """修改浏览器代理
     Attributes:
@@ -95,10 +95,8 @@ def update_proxy(browser_id, index_id, proxy_ip, proxy_port, proxy_username, pro
             "proxy_password":proxy_password
         }
     }
-    response = requests.post(url=f"{adspower_url}/api/v1/user/update", json=data).json()
-    if response['code'] != 0:
-        print('修改代理失败', response["msg"]) 
-        return
+    response = requests.post(url=f"{adspower_url}/api/v1/user/update", json=data)
+    response.raise_for_status()
     print('第',index_id,'个账号修改代理成功')
     time.sleep(1) # api速率限制。添加等待
 
@@ -106,6 +104,7 @@ class AdsPowerUtil():
     """selenium操作adspower指纹浏览器
     """
 
+    @try_except_code
     def __init__(self, browser_id):
         """启动浏览器(webdriver为adspower自带的,不必单独下载)
 
@@ -120,11 +119,11 @@ class AdsPowerUtil():
         # 关闭其他窗口
         self.close_other_windows()
 
+    @try_except_code
     def open(self):
-        response = requests.get(f"{adspower_url}/api/v1/browser/start?user_id={self.browser_id}").json()
-        if response["code"] != 0:
-            print("please check browser_id", response["msg"])
-            return
+        response = requests.get(f"{adspower_url}/api/v1/browser/start?user_id={self.browser_id}")
+        response.raise_for_status()
+        response = response.json()
         # 启动浏览器后在返回值中拿到对应的Webdriver的路径response["data"]["webdriver"]
         chrome_driver = Service(str(response["data"]["webdriver"]))
         # selenium启动的chrome浏览器是一个空白的浏览器。chromeOptions是一个配置chrome启动属性的类，用来配置参数。
@@ -134,6 +133,7 @@ class AdsPowerUtil():
         driver = webdriver.Chrome(service=chrome_driver, options=chrome_options)
         return driver
 
+    @try_except_code
     def close_other_windows(self):
         """关闭无关窗口，只留当前窗口
         理论上下面代码会保留当前窗口，句柄没错。但是实际窗口却没有达到预期。不清楚具体原因。后续再研究。目前能做到的就是只保留一个窗口
@@ -146,24 +146,28 @@ class AdsPowerUtil():
                 self.driver.close()
         self.driver.switch_to.window(current_handle)     
 
+    @try_except_code
     def quit(self):
         """关闭浏览器
         """
         response = requests.get(f"{adspower_url}/api/v1/browser/stop?user_id={self.browser_id}")
-        if response['code'] != 0:
-            print('关闭失败', response['msg'])
+        response.raise_for_status()
 
 if __name__ == '__main__':
 
-    # # 创建浏览器
-    # for i in range(10):
+    # # 创建或修改浏览器信息
+    # for i in range(20):
     #     # 参数：browser_os='mac', is_create=True, browser_id=''
     #     create_or_update_browser(browser_os='mac', is_create=True, browser_id='')
     # exit()
 
 
-    data = my_format_data(start_num=1, end_num=3, is_bitbrowser=False)
+
+    data = my_format_data(start_num=1, end_num=20, is_bitbrowser=False)
     # print(data)
+
+
+
 
     # # 修改代理ip（socks5）
     # for d in data:

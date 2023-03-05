@@ -8,13 +8,17 @@ from browser.bitbrowser import *
 # from browser.adspower import *
 from config import *
 from formatdata import *
+from utils import try_except_code
 
 class OAuth2ForTwitterUtil(BitBrowserUtil):
     """身份验证,获取refresh_token备用
     """
+
+    @try_except_code
     def __init__(self, browser_id):
         super(OAuth2ForTwitterUtil, self).__init__(browser_id)
 
+    @try_except_code
     def create_refresh_token(self, account):
         data = json.load(open(refresh_tokens_file,'r',encoding="utf-8"))
         oauth2_user_handler = tweepy.OAuth2UserHandler(
@@ -45,11 +49,10 @@ class OAuth2ForTwitterUtil(BitBrowserUtil):
             # print(response_url)
         except Exception as e:
             print(e)
-        result = oauth2_user_handler.fetch_token(response_url)
-        if 'error' in result:
-            print(result['error_description'])
-            return
-        new_refresh_token = {account: result['refresh_token']}
+        response = oauth2_user_handler.fetch_token(response_url)
+        # 检查响应的状态码，如果状态码表明请求失败，则抛出一个HTTPError异常。用try_except_code捕获错误。如果状态码表明请求成功，则什么也不会发生，函数会直接返回
+        response.raise_for_status()
+        new_refresh_token = {account: response ['refresh_token']}
         with open(refresh_tokens_file, 'r') as f:
             data = json.load(f)
             refresh_token = {**data, **new_refresh_token}
@@ -59,8 +62,21 @@ class OAuth2ForTwitterUtil(BitBrowserUtil):
         
 class TwitterUtil():
 
-    def __init__(self, account, ua, proxy):
+    @try_except_code
+    def __init__(self, account, user_agent, proxy):
         """获取授权,调用twitter api
+        """
+        proxies = {"http": proxy, "https": proxy}
+        access_token = self.get_new_access_token(account, user_agent, proxies)
+        # 使用新的 access_token 生成clien， 进行 API 调用
+        self.client = tweepy.Client(bearer_token=access_token)
+        # 设置代理
+        self.client.session.proxies = proxies
+        self.account = account
+
+    @try_except_code
+    def get_new_access_token(self, account, user_agent, proxies):
+        """ 通过refresh_token请求新的refresh_token和新的access_token
         提示: tweepy通过access_token而不是通过refresh_token内部处理成access_token来初始化。access_token有效期2小时,不可能过期了再通过用户授权的方式来请求,效率低.另外refresh_token不会过期,
         所以还是需要存refresh_token.twitter奇怪的点是通过refresh_token获取access_token时refresh_token也会变,所以存储的refreshtoken得跟着修改,google的refresh_token就不会变
         通过refresh_token获得access_token和新的refresh_token是用twitter的api实现的不是tweepy的库实现的
@@ -71,20 +87,19 @@ class TwitterUtil():
         url = 'https://api.twitter.com/2/oauth2/token'
         headers ={
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": ua
+            "User-Agent": user_agent
             }
         playlod = urllib.parse.urlencode({
             "grant_type": "refresh_token",
             "refresh_token": data[account], 
             "client_id": client_id
         })
-        proxies = {"http": proxy, "https": proxy}
         response = requests.post(url=url, headers=headers, data=playlod, proxies=proxies)
+        # 检查响应的状态码，如果状态码表明请求失败，则抛出一个HTTPError异常。用try_except_code捕获错误。如果状态码表明请求成功，则什么也不会发生，函数会直接返回
+        response.raise_for_status()
         # byte.decode('UTF-8')将byte转换成str，json.load将str转换成dict
         result = json.loads((response.content).decode('UTF-8'))
-        if 'error' in result:
-            print(result['error_description'])
-            return
+        # 用新的refresh_token替换refresh_tokens_file中对应账号的旧的refresh_token
         new_refresh_token = {account: result['refresh_token']}
         with open(refresh_tokens_file, 'r') as f:
             data = json.load(f)
@@ -92,15 +107,12 @@ class TwitterUtil():
             data.update(refresh_token)
         with open(refresh_tokens_file, 'w') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
-        
-        # 使用新的 access_token 进行 API 调用
-        self.client = tweepy.Client(bearer_token=result['access_token'])
-        # 设置代理
-        self.client.session.proxies = proxies
-        self.account = account
+        access_token = result['access_token']
+        return access_token
 
+    @try_except_code
     def get_account(self):
-        """获取验证账户的信息
+        """获取验证账号的信息
         """
         account_info = self.client.get_me(user_auth=False)
         account_id = account_info.data.id
@@ -108,6 +120,7 @@ class TwitterUtil():
         account = {'account_id':account_id, 'account_username':account_username}
         return account
 
+    @try_except_code
     def get_user_id_from_username(self, username):
         """通过用户名获取用户唯一id
         """
@@ -116,6 +129,7 @@ class TwitterUtil():
         user_id = data.data.id
         return user_id
 
+    @try_except_code
     def get_user_followers(self, user_id, num=None):
         """获取用户的关注者
 
@@ -149,6 +163,7 @@ class TwitterUtil():
         # print(len(followers))
         return followers
 
+    @try_except_code
     def get_user_followings(self, user_id, num=None):
         """获取用户关注的人
 
@@ -178,16 +193,19 @@ class TwitterUtil():
         # print(len(followings))
         return followings
     
+    @try_except_code
     def follow(self, user_id):
         """关注别人
         """
         self.client.follow_user(user_id, user_auth=False)
        
+    @try_except_code
     def unfollow(self, user_id):
         """取消关注别人
         """
         self.client.unfollow_user(user_id, user_auth=False)
 
+    @try_except_code
     def create_tweet(self):
         """创建推文
         """
@@ -198,6 +216,7 @@ class TwitterUtil():
         self.client.create_tweet(text=tweet_text, user_auth=False)
         print('推文已发')
 
+    @try_except_code
     def reply(self, tweet_id, tem_reply_text='', is_use_reply_file=True):
         """评论推文。
 
@@ -225,31 +244,37 @@ class TwitterUtil():
             
         self.client.create_tweet(in_reply_to_tweet_id=tweet_id, text=reply_text, user_auth=False)
 
+    @try_except_code
     def delete_tweet(self, tweet_id):
         """删除推文
         """
         self.client.delete_tweet(id=tweet_id, user_auth=False)
 
+    @try_except_code
     def like(self, tweet_id):
         """喜欢推文
         """
         self.client.like(tweet_id, user_auth=False)
     
+    @try_except_code
     def unlike(self, tweet_id):
         """取消喜欢推文
         """
         self.client.unlike(tweet_id, user_auth=False)
 
+    @try_except_code
     def retweet(self, tweet_id):
         """转发推文
         """
         self.client.retweet(tweet_id, user_auth=False)
     
+    @try_except_code
     def unretweet(self, tweet_id):
         """取消转发推文
         """
         self.client.unretweet(source_tweet_id=tweet_id, user_auth=False)
 
+    @try_except_code
     def parse_time(self, start_time, end_time):
         """将时间解析为twitter要求的iso时间。注意:tweepy接口时间为utc时间。为了方便此函数传递的时间为utc+8时间
         
@@ -288,6 +313,7 @@ class TwitterUtil():
             print('错误信息',e,'\n时间只允许整数类型或者YYYY-MM-DD HH:mm:ss类型')
             return
 
+    @try_except_code
     def get_home_timeline(self, start_time, end_time=None):
         """允许您检索您和您关注的用户发布的最新推文和转推的集合。此端点最多返回最后 3200 条推文。
 
@@ -322,6 +348,7 @@ class TwitterUtil():
         # print(tweets)
         return tweets
         
+    @try_except_code
     def get_user_tweets(self, username, start_time, end_time=None):
         """允许您检索指定的单个用户组成的推文。最多返回最近的 3200 条推文。
 
@@ -355,6 +382,7 @@ class TwitterUtil():
         # print(tweets)
         return tweets
 
+    @try_except_code
     def get_tweet(self, tweet_id):
         """检索指定推文信息
 
@@ -392,6 +420,7 @@ class TwitterUtil():
         # print(tweet)
         return tweet
 
+    @try_except_code
     def get_tweet_replyers(self, tweet_id, replyer_amount=10, my_twitter_data=None):
         """检索指定推文的评论者
 
@@ -435,6 +464,7 @@ class TwitterUtil():
         # print(replyers)
         return replyers
 
+    @try_except_code
     def search_recent_tweets(self, query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50):
         """返回过去 n 天内与搜索查询匹配的推文,最多7天
 
@@ -519,6 +549,7 @@ class TwitterUtil():
         # print(tweets)
         return tweets
 
+    @try_except_code
     def giveaway(self, query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50, tag_amount=3, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True):
         """养号、抽奖
 
@@ -537,48 +568,46 @@ class TwitterUtil():
             is_retweet: 是否转推
             is_reply: 是否回复
         """
-        try:
-            # 获取验证账户的追随者
-            account = self.get_account()
-            account_id = account['account_id']
-            all_followers = self.get_user_followers(account_id, num=tag_amount)
-            if len(all_followers) < tag_amount:
-                print('账户',account['account_username'],'关注者不够')
-                return
-            # 获取推文query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50
-            tweets = self.search_recent_tweets(query=query, start_time=start_time, end_time=end_time, search_amount=search_amount, follows_count=follows_count, like_count=like_count)
-            # 随机选择一条推文
-            tweet = random.choice(tweets)
-            # print(tweet)
-            # 关注推文作者
-            self.follow(tweet['tweet_author_id'])
+        # 获取验证账号的追随者
+        account = self.get_account()
+        account_id = account['account_id']
+        all_followers = self.get_user_followers(account_id, num=tag_amount)
+        if len(all_followers) < tag_amount:
+            print('账号',account['account_username'],'关注者不够')
+            return
+        # 获取推文query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50
+        tweets = self.search_recent_tweets(query=query, start_time=start_time, end_time=end_time, search_amount=search_amount, follows_count=follows_count, like_count=like_count)
+        # 随机选择一条推文
+        tweet = random.choice(tweets)
+        # print(tweet)
+        # 关注推文作者
+        self.follow(tweet['tweet_author_id'])
+        time.sleep(1)
+        # 关注推文提到的实体
+        if tweet['tweet_mentions_id'] != []:
+            for mention_id in tweet['tweet_mentions_id']:
+                # 作者不要重复关注
+                if mention_id != tweet['tweet_author_id']:
+                    self.follow(mention_id)
+                    time.sleep(1)
+        if is_like == True:
+            # 喜欢
+            self.like(tweet['tweet_id'])
             time.sleep(1)
-            # 关注推文提到的实体
-            if tweet['tweet_mentions_id'] != []:
-                for mention_id in tweet['tweet_mentions_id']:
-                    # 作者不要重复关注
-                    if mention_id != tweet['tweet_author_id']:
-                        self.follow(mention_id)
-                        time.sleep(1)
-            if is_like == True:
-                # 喜欢
-                self.like(tweet['tweet_id'])
-                time.sleep(1)
-            if is_retweet == True:
-                # 转推
-                self.retweet(tweet['tweet_id'])
-                time.sleep(1)
-            if is_reply == True:
-                # 评论并@tag_amount个朋友
-                follows = ''
-                if len(all_followers) > 0:
-                    for follower in all_followers:
-                        follows = '@'+follower['user_name'] + ' ' + follows
-                self.reply(tweet['tweet_id'], tem_reply_text=follows, is_use_reply_file=is_use_reply_file)
-            print('已三连')
-        except Exception as e:
-            print(e)  
+        if is_retweet == True:
+            # 转推
+            self.retweet(tweet['tweet_id'])
+            time.sleep(1)
+        if is_reply == True:
+            # 评论并@tag_amount个朋友
+            follows = ''
+            if len(all_followers) > 0:
+                for follower in all_followers:
+                    follows = '@'+follower['user_name'] + ' ' + follows
+            self.reply(tweet['tweet_id'], tem_reply_text=follows, is_use_reply_file=is_use_reply_file)
+        print('已三连')
 
+    @try_except_code
     def giveaway_from_fix_tweet(self, tweet_id, tag_amount=3, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True):
         """指定推文抽奖
 
@@ -590,45 +619,43 @@ class TwitterUtil():
             is_retweet: 是否转推
             is_reply: 是否回复
         """
-        try:
-            # 获取验证账户的追随者
-            account = self.get_account()
-            account_id = account['account_id']
-            all_followers = self.get_user_followers(account_id, num=tag_amount)
-            if len(all_followers) < tag_amount:
-                print('账户',account['account_username'],'关注者不够')
-                return
-            # 获取推文信息
-            tweet = self.get_tweet(tweet_id)
-            # 关注推文作者
-            self.follow(tweet['tweet_author_id'])
+        # 获取验证账号的追随者
+        account = self.get_account()
+        account_id = account['account_id']
+        all_followers = self.get_user_followers(account_id, num=tag_amount)
+        if len(all_followers) < tag_amount:
+            print('账号',account['account_username'],'关注者不够')
+            return
+        # 获取推文信息
+        tweet = self.get_tweet(tweet_id)
+        # 关注推文作者
+        self.follow(tweet['tweet_author_id'])
+        time.sleep(1)
+        # 关注推文提到的实体
+        if tweet['tweet_mentions_id'] != []:
+            for mention_id in tweet['tweet_mentions_id']:
+                # 作者不要重复关注
+                if mention_id != tweet['tweet_author_id']:
+                    self.follow(mention_id)
+                    time.sleep(1)
+        if is_like == True:
+            # 喜欢
+            self.like(tweet_id)
             time.sleep(1)
-            # 关注推文提到的实体
-            if tweet['tweet_mentions_id'] != []:
-                for mention_id in tweet['tweet_mentions_id']:
-                    # 作者不要重复关注
-                    if mention_id != tweet['tweet_author_id']:
-                        self.follow(mention_id)
-                        time.sleep(1)
-            if is_like == True:
-                # 喜欢
-                self.like(tweet_id)
-                time.sleep(1)
-            if is_retweet == True:
-                # 转推
-                self.retweet(tweet_id)
-                time.sleep(1)
-            if is_reply == True:
-                # 评论并@tag_amount个朋友
-                follows = ''
-                if len(all_followers) > 0:
-                    for follower in all_followers:
-                        follows = '@'+follower['user_name'] + ' ' + follows
-                self.reply(tweet_id, tem_reply_text=follows, is_use_reply_file=is_use_reply_file)
-            print('已三连')
-        except Exception as e:
-            print(e)  
+        if is_retweet == True:
+            # 转推
+            self.retweet(tweet_id)
+            time.sleep(1)
+        if is_reply == True:
+            # 评论并@tag_amount个朋友
+            follows = ''
+            if len(all_followers) > 0:
+                for follower in all_followers:
+                    follows = '@'+follower['user_name'] + ' ' + follows
+            self.reply(tweet_id, tem_reply_text=follows, is_use_reply_file=is_use_reply_file)
+        print('已三连')
 
+    @try_except_code
     def set_follow_info(self, query, start_time, end_time=None, follows_count=1000, like_count=50, search_amount=20, to_follow_amount=10, my_twitter_data=None, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=True):
         """去互关贴下发互关信息
 
@@ -648,55 +675,53 @@ class TwitterUtil():
             tem_reply_text: 回复话术（部分）
             is_use_reply_file: 是否使用回复文件里的话术
         """
-        try:
-            # 通过query随机获取互关推文
-            tweets = self.search_recent_tweets(query=query, start_time=start_time, end_time=None, search_amount=search_amount, follows_count=follows_count, like_count=like_count)
-            # print(tweets)
-            # 随机选择一条推文
-            tweet = random.choice(tweets)
-            # print(tweet)
-            # 关注推文作者
-            self.follow(tweet['tweet_author_id'])
-            time.sleep(1)
-            # 关注推文提到的实体（作者@的人）
-            if tweet['tweet_mentions_id'] != []:
-                for mention_id in tweet['tweet_mentions_id']:
-                    # 作者不要重复关注
-                    if mention_id != tweet['tweet_author_id']:
-                        self.follow(mention_id)
-                        time.sleep(1)
-            # 关注推文评论者
-            replyers = self.get_tweet_replyers(tweet['tweet_id'], replyer_amount=to_follow_amount, my_twitter_data=my_twitter_data)
-            # print(replyers)
-            if len(replyers) != 0:
-                for replyer in replyers:
-                    self.follow(replyer['replyer_id'])
+        # 通过query随机获取互关推文
+        tweets = self.search_recent_tweets(query=query, start_time=start_time, end_time=None, search_amount=search_amount, follows_count=follows_count, like_count=like_count)
+        # print(tweets)
+        # 随机选择一条推文
+        tweet = random.choice(tweets)
+        # print(tweet)
+        # 关注推文作者
+        self.follow(tweet['tweet_author_id'])
+        time.sleep(1)
+        # 关注推文提到的实体（作者@的人）
+        if tweet['tweet_mentions_id'] != []:
+            for mention_id in tweet['tweet_mentions_id']:
+                # 作者不要重复关注
+                if mention_id != tweet['tweet_author_id']:
+                    self.follow(mention_id)
                     time.sleep(1)
-            # 转发此推文
-            self.retweet(tweet['tweet_id'])
-            time.sleep(1)
-            # 回复此推文
-            self.reply(tweet['tweet_id'], tem_reply_text=tem_reply_text, is_use_reply_file=is_use_reply_file)
-            print('已关注、已转推、已发布互关信息')
-        except Exception as e:
-            print(e)
+        # 关注推文评论者
+        replyers = self.get_tweet_replyers(tweet['tweet_id'], replyer_amount=to_follow_amount, my_twitter_data=my_twitter_data)
+        # print(replyers)
+        if len(replyers) != 0:
+            for replyer in replyers:
+                self.follow(replyer['replyer_id'])
+                time.sleep(1)
+        # 转发此推文
+        self.retweet(tweet['tweet_id'])
+        time.sleep(1)
+        # 回复此推文
+        self.reply(tweet['tweet_id'], tem_reply_text=tem_reply_text, is_use_reply_file=is_use_reply_file)
+        print('已关注、已转推、已发布互关信息')
 
+    @try_except_code
     def follow_back(self, my_twitter_data=None, once_follow_num=10):
         '''回关
         Attributes:
             my_twitter_data: 所有的账号信息。用于排除评论者中自己的小号
             once_follow_num: 关注几个人
         '''
-        # 获取验证账户
+        # 获取验证账号
         account = self.get_account()
         account_id = account['account_id']
-        # 获取关注验证账户的人
+        # 获取关注验证账号的人
         all_followers = self.get_user_followers(account_id)
         # print(all_followers)
-        # 获取验证账户关注的人
+        # 获取验证账号关注的人
         all_followings = self.get_user_followings(account_id)
         # print(all_followings)
-        # 比较关注此账户的人和此账户关注的人。排除重复的人（彼此关注过了），关注此账户的人集合里剩下的人就是需要去关注的。
+        # 比较关注此账号的人和此账号关注的人。排除重复的人（彼此关注过了），关注此账号的人集合里剩下的人就是需要去关注的。
         # 将字典转换为元组，只保留字典中的"id"键
         followers_ids = set(tuple(follower["user_name"] for follower in all_followers))
         followings_ids = set(tuple(following["user_name"] for following in all_followings))
@@ -705,7 +730,7 @@ class TwitterUtil():
         # 如果小号不互关的话，将自己的twitter账号全部添加进集合
         if my_twitter_data is not None:
             intersection |= set(my_twitter_data)
-        # 排除重复的人（彼此关注过了），关注此账户的人集合里剩下的人就是需要去关注的
+        # 排除重复的人（彼此关注过了），关注此账号的人集合里剩下的人就是需要去关注的
         need_followers = [follower for follower in all_followers if follower["user_name"] not in intersection]
         # print(need_followers)
         # 回关。设置最大关注数量，如果未关注的人太多，可能会被封控。这个可以慢慢回关
@@ -715,7 +740,7 @@ class TwitterUtil():
                 need_follower = need_followers[i]
                 self.follow(need_follower['user_id'])
                 time.sleep(1)
-            print('已回关',once_follow_num,'个账户')
+            print('已回关',once_follow_num,'个账号')
         elif num > 0 and num < once_follow_num:
             for need_follow in need_followers:
                 self.follow(need_follow['user_id'])
@@ -730,7 +755,7 @@ if __name__ == '__main__':
     # 1,1代表第1个账号。2,2代表第二个账号。以此类推...
     # 1,20代表第1-20个账号。3,10代表第3-10个账号。以此类推...
     # 默认用比特浏览器。如果用ads浏览器需要把s_bitbrowser值改为False
-    data = my_format_data(start_num=1, end_num=20, is_bitbrowser=True)
+    data = my_format_data(start_num=1, end_num=20, is_bitbrowser=False)
     # print(data)
     
     # 所有twitter账号
@@ -738,19 +763,21 @@ if __name__ == '__main__':
     # print(my_twitter_data)
 
 
+
     # # 2、程序第一次需要跟用户交互，来获取权限。会自动打开指纹浏览器（指纹app需要先打开），点击授权，只需要交互1次。自动将refresh_token保存备用。
     # # 将获取到的refresh_token保存在`twitter_credential_tokens.json`文件中。以后运行程序就不需要再跟用户交互了。程序自动使用refresh_token刷新accress_token来调用twitter api，并将自动更新文件中的refresh_token。
+    # # 如果后续使用中，refresh_token失效了，需要再次授权交互获取新的refresh_token
     # for d in data:   
     #     # 验证
     #     oauth2 = OAuth2ForTwitterUtil(d['browser_id']) 
     #     oauth2.create_refresh_token(d['twitter_username'])
     # exit()
-        
+    
 
 
     # 3、调用twitter api 处理业务
     for d in data:
-        # print(d)
+        print('第',d['index_id'],'个账号')
         # 实例化TwitterUtil
         twitter = TwitterUtil(d['twitter_username'], d['user_agent'], d['proxy'])
 
@@ -788,24 +815,25 @@ if __name__ == '__main__':
 
         # # 获取自己的关注者，没有关注的回关
         # # 参数：my_twitter_data=None, once_follow_num=10
-        # twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
+        twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
+        time.sleep(50)
 
-        # 日常养号：发布推文|随机获取符合一定条件的推文关注点赞转推评论|随机获取互关贴，留言，回关
-        lucky = random.choice([1, 2, 3])
-        if lucky == 1:
-            twitter.create_tweet()
-        elif lucky == 2:
-            # query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50, tag_amount=3, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True
-            twitter.giveaway(query='(follow OR like OR rt OR tag OR retweet OR 关注 OR 喜欢 OR 转推) (#nft OR #gamefi) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, search_amount=10, follows_count=100, like_count=50, tag_amount=0, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True)
-        elif lucky == 3:
-            # 1、获取自己的关注者，关注。2、随机找到互关贴，发互关消息。
-            # query, start_time, end_time=None, follows_count=1000, like_count=50, search_amount=20, to_follow_amount=10, my_twitter_data=None, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=True
-            twitter.set_follow_info(query='(互关 OR 涨粉 OR 互粉) (#互关 OR #互粉 OR #有关必回) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, follows_count=1000, like_count=10, search_amount=10, to_follow_amount=10, my_twitter_data=my_twitter_data, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=False)
-            # my_twitter_data=None, once_follow_num=10
-            twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
-        if len(data) > 1:
-            interval_time = 60
-            time.sleep(random.randrange(interval_time, interval_time+10))
+        # # 日常养号：发布推文|随机获取符合一定条件的推文关注点赞转推评论|随机获取互关贴，留言，回关
+        # lucky = random.choice([1, 2, 3])
+        # if lucky == 1:
+        #     twitter.create_tweet()
+        # elif lucky == 2:
+        #     # query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50, tag_amount=3, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True
+        #     twitter.giveaway(query='(follow OR like OR rt OR tag OR retweet OR 关注 OR 喜欢 OR 转推) (#nft OR #gamefi) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, search_amount=10, follows_count=100, like_count=50, tag_amount=0, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True)
+        # elif lucky == 3:
+        #     # 1、获取自己的关注者，关注。2、随机找到互关贴，发互关消息。
+        #     # query, start_time, end_time=None, follows_count=1000, like_count=50, search_amount=20, to_follow_amount=10, my_twitter_data=None, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=True
+        #     twitter.set_follow_info(query='(互关 OR 涨粉 OR 互粉) (#互关 OR #互粉 OR #有关必回) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, follows_count=1000, like_count=10, search_amount=10, to_follow_amount=10, my_twitter_data=my_twitter_data, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=False)
+        #     # my_twitter_data=None, once_follow_num=10
+        #     twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
+        # if len(data) > 1:
+        #     interval_time = 60
+        #     time.sleep(random.randrange(interval_time, interval_time+10))
         
 
 

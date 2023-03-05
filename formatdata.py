@@ -2,8 +2,10 @@ import pandas as pd
 import os,sys
 sys.path.append(os.getcwd()) # 工作目录
 from config import *
+from utils import try_except_code
 
 # 组装数据
+@try_except_code
 def my_format_data(start_num, end_num, is_bitbrowser=True):
     """组装数据
         
@@ -44,7 +46,10 @@ def my_format_data(start_num, end_num, is_bitbrowser=True):
     data = data.to_dict('records')
     return data
 
+@try_except_code
 def my_twitter_data():
+    """所有twitter账号数据。数组
+    """
     all_twitter = pd.read_csv(twitter_file, sep='|', engine='python')
     # 将DataFrame数据转换为数组
     my_twitter_data = all_twitter['twitter_username'].tolist()
