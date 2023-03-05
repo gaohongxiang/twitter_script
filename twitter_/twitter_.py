@@ -20,7 +20,6 @@ class OAuth2ForTwitterUtil(BitBrowserUtil):
 
     @try_except_code
     def create_refresh_token(self, account):
-        data = json.load(open(refresh_tokens_file,'r',encoding="utf-8"))
         oauth2_user_handler = tweepy.OAuth2UserHandler(
             client_id=client_id,
             redirect_uri=redirect_uri,
@@ -50,14 +49,12 @@ class OAuth2ForTwitterUtil(BitBrowserUtil):
         except Exception as e:
             print(e)
         response = oauth2_user_handler.fetch_token(response_url)
-        # 检查响应的状态码，如果状态码表明请求失败，则抛出一个HTTPError异常。用try_except_code捕获错误。如果状态码表明请求成功，则什么也不会发生，函数会直接返回
-        response.raise_for_status()
         new_refresh_token = {account: response ['refresh_token']}
-        with open(refresh_tokens_file, 'r') as f:
+        with open(refresh_tokens_file, 'r',encoding="utf-8") as f:
             data = json.load(f)
             refresh_token = {**data, **new_refresh_token}
             data.update(refresh_token)
-        with open(refresh_tokens_file, 'w') as f:
+        with open(refresh_tokens_file, 'w',encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
         
 class TwitterUtil():
@@ -81,7 +78,8 @@ class TwitterUtil():
         所以还是需要存refresh_token.twitter奇怪的点是通过refresh_token获取access_token时refresh_token也会变,所以存储的refreshtoken得跟着修改,google的refresh_token就不会变
         通过refresh_token获得access_token和新的refresh_token是用twitter的api实现的不是tweepy的库实现的
         """
-        data = json.load(open(refresh_tokens_file,'r',encoding="utf-8"))
+        with open(refresh_tokens_file, 'r',encoding="utf-8") as f:
+            data = json.load(f)
         # tweepy目前没有方法通过refresh_token来刷新access_token。
         # 通过refresh_token跟twitter API端点交互，获取新的refresh_token和access_token。
         url = 'https://api.twitter.com/2/oauth2/token'
@@ -101,11 +99,11 @@ class TwitterUtil():
         result = json.loads((response.content).decode('UTF-8'))
         # 用新的refresh_token替换refresh_tokens_file中对应账号的旧的refresh_token
         new_refresh_token = {account: result['refresh_token']}
-        with open(refresh_tokens_file, 'r') as f:
+        with open(refresh_tokens_file, 'r',encoding="utf-8") as f:
             data = json.load(f)
             refresh_token = {**data, **new_refresh_token}
             data.update(refresh_token)
-        with open(refresh_tokens_file, 'w') as f:
+        with open(refresh_tokens_file, 'w',encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
         access_token = result['access_token']
         return access_token
@@ -755,7 +753,7 @@ if __name__ == '__main__':
     # 1,1代表第1个账号。2,2代表第二个账号。以此类推...
     # 1,20代表第1-20个账号。3,10代表第3-10个账号。以此类推...
     # 默认用比特浏览器。如果用ads浏览器需要把s_bitbrowser值改为False
-    data = my_format_data(start_num=1, end_num=20, is_bitbrowser=False)
+    data = my_format_data(start_num=1, end_num=20, is_bitbrowser=True)
     # print(data)
     
     # 所有twitter账号
