@@ -44,7 +44,7 @@ def create_or_update_browser(browser_os='mac', browser_id=''):
         "browserFingerPrint": {
             'coreVersion': '104',  # 内核版本，默认104，可选92
             'ostype': 'PC',  # 操作系统平台 PC | Android | IOS
-            'version': '', # 浏览器版本，建议92以上，不填则会从92以上版本随机
+            'version': '106', # 浏览器版本，建议92以上，不填则会从92以上版本随机。目前106最高
             'os': browser_os,  # 为navigator.platform值 Win32 | Linux i686 | Linux armv7l | MacIntel
             'userAgent': '', # ua，不填则自动生成
             'isIpCreateTimeZone': False,  # 基于IP生成对应的时区
@@ -62,7 +62,7 @@ def create_or_update_browser(browser_os='mac', browser_id=''):
         }
     }
 
-    response = requests.post(f"{bitbrowser_url}/browser/updat", json=body)
+    response = requests.post(f"{bitbrowser_url}/browser/update", json=body)
     response.raise_for_status()
     response = response.json()
     browser_id = response['data']['id']
