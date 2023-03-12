@@ -2,7 +2,7 @@ import pandas as pd
 import os,sys
 sys.path.append(os.getcwd()) # 工作目录
 from config import *
-from utils import try_except_code
+from utils.utils import try_except_code
 
 # 组装数据
 @try_except_code
@@ -57,7 +57,7 @@ def my_twitter_data():
 
 if __name__ == '__main__':
 
-    my_format_data = my_format_data(1, 2, is_bitbrowser=True)
+    my_format_data = my_format_data(1, 20, is_bitbrowser=True)
     print(my_format_data)
 
     my_twitter_data = my_twitter_data()

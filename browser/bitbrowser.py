@@ -14,7 +14,7 @@ import requests,os,sys,time,math,json
 sys.path.append(os.getcwd()) # 工作目录
 from config import *
 from formatdata import *
-from utils import try_except_code
+from utils.utils import try_except_code
 
 @try_except_code
 def create_or_update_browser(browser_os='mac', browser_id=''):

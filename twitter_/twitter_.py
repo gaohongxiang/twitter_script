@@ -8,7 +8,7 @@ from browser.bitbrowser import *
 # from browser.adspower import *
 from config import *
 from formatdata import *
-from utils import try_except_code
+from utils.utils import try_except_code
 
 class OAuth2ForTwitterUtil(BitBrowserUtil):
     """身份验证,获取refresh_token备用
@@ -813,25 +813,25 @@ if __name__ == '__main__':
 
         # # 获取自己的关注者，没有关注的回关
         # # 参数：my_twitter_data=None, once_follow_num=10
-        twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
-        time.sleep(50)
+        # twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
+        # time.sleep(50)
 
-        # # 日常养号：发布推文|随机获取符合一定条件的推文关注点赞转推评论|随机获取互关贴，留言，回关
-        # lucky = random.choice([1, 2, 3])
-        # if lucky == 1:
-        #     twitter.create_tweet()
-        # elif lucky == 2:
-        #     # query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50, tag_amount=3, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True
-        #     twitter.giveaway(query='(follow OR like OR rt OR tag OR retweet OR 关注 OR 喜欢 OR 转推) (#nft OR #gamefi) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, search_amount=10, follows_count=100, like_count=50, tag_amount=0, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True)
-        # elif lucky == 3:
-        #     # 1、获取自己的关注者，关注。2、随机找到互关贴，发互关消息。
-        #     # query, start_time, end_time=None, follows_count=1000, like_count=50, search_amount=20, to_follow_amount=10, my_twitter_data=None, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=True
-        #     twitter.set_follow_info(query='(互关 OR 涨粉 OR 互粉) (#互关 OR #互粉 OR #有关必回) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, follows_count=1000, like_count=10, search_amount=10, to_follow_amount=10, my_twitter_data=my_twitter_data, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=False)
-        #     # my_twitter_data=None, once_follow_num=10
-        #     twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
-        # if len(data) > 1:
-        #     interval_time = 60
-        #     time.sleep(random.randrange(interval_time, interval_time+10))
+        # 日常养号：发布推文|随机获取符合一定条件的推文关注点赞转推评论|随机获取互关贴，留言，回关
+        lucky = random.choice([1,2,3])
+        if lucky == 1:
+            twitter.create_tweet()
+        elif lucky == 2:
+            # query, start_time, end_time=None, search_amount=20, follows_count=1000, like_count=50, tag_amount=3, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True
+            twitter.giveaway(query='(follow OR like OR rt OR tag OR retweet OR 关注 OR 喜欢 OR 转推) (#nft OR #gamefi) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, search_amount=10, follows_count=100, like_count=50, tag_amount=0, is_use_reply_file=True, is_like=True, is_retweet=True, is_reply=True)
+        elif lucky == 3:
+            # 1、获取自己的关注者，关注。2、随机找到互关贴，发互关消息。
+            # query, start_time, end_time=None, follows_count=1000, like_count=50, search_amount=20, to_follow_amount=10, my_twitter_data=None, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=True
+            twitter.set_follow_info(query='(互关 OR 涨粉 OR 互粉) (#互关 OR #互粉 OR #有关必回) has:hashtags -is:retweet -is:reply -is:quote', start_time=1, end_time=None, follows_count=1000, like_count=10, search_amount=10, to_follow_amount=10, my_twitter_data=my_twitter_data, tem_reply_text='诚信互关，有关必回\n#互关 #互粉  #互fo', is_use_reply_file=False)
+            # my_twitter_data=None, once_follow_num=10
+            twitter.follow_back(my_twitter_data=my_twitter_data, once_follow_num=10)
+        if len(data) > 1:
+            interval_time = 60
+            time.sleep(random.randrange(interval_time, interval_time+10))
         
 
 
