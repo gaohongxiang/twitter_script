@@ -2,7 +2,7 @@ import pandas as pd
 import os,sys
 sys.path.append(os.getcwd()) # 工作目录
 from config import *
-from utils.utils import try_except_code
+from utils_.utils import try_except_code
 
 # 组装数据
 @try_except_code

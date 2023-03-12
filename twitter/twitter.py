@@ -8,7 +8,7 @@ from browser.bitbrowser import *
 # from browser.adspower import *
 from config import *
 from formatdata import *
-from utils.utils import try_except_code
+from utils_.utils import try_except_code
 
 class OAuth2ForTwitterUtil(BitBrowserUtil):
     """身份验证,获取refresh_token备用
@@ -778,7 +778,7 @@ if __name__ == '__main__':
         print('第',d['index_id'],'个账号')
         # 实例化TwitterUtil
         twitter = TwitterUtil(d['twitter_username'], d['user_agent'], d['proxy'])
-        
+
         # # 通过用户名获取用户id
         # user_id = twitter.get_user_id_from_username('gaohongxiang')
         # print(user_id)
