@@ -778,7 +778,7 @@ if __name__ == '__main__':
         print('第',d['index_id'],'个账号')
         # 实例化TwitterUtil
         twitter = TwitterUtil(d['twitter_username'], d['user_agent'], d['proxy'])
-
+        
         # # 通过用户名获取用户id
         # user_id = twitter.get_user_id_from_username('gaohongxiang')
         # print(user_id)
