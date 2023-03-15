@@ -48,8 +48,8 @@ twitter开发者平台网址：https://developer.twitter.com/en/portal/dashboard
 完整文件结构
 ```
 twitter_script
-    twitter_
-        twitter_.py # 主文件
+    twitter
+        twitter.py # 主文件
         refresh_tokens.json # 各账号refresh_token文件
     browser
         bitbrowser.py # 比特浏览器文件
